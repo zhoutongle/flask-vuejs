@@ -4,6 +4,6 @@
  * 实际项目中建议该文件不纳入版本管理
  */
 export default {
-  baseURL: 'http://localhost:8090',
+  baseURL: 'http://127.0.0.1:5000/api',
   isDev: true
 }

@@ -1,13 +1,12 @@
 <template>
-  <div style="background-image:url('../assets/background/a.jpg');">
+  <div>
     <!--div class="header-content">
       <div class="logo-part">
         <img src="../assets/logo.png" width="30" height="30">
         <span>管理系统</span>
       </div>
     </div-->
-    <el-form ref="AccountForm" :model="account" :rules="rules" label-position="left" label-width="0px"
-             class="demo-ruleForm login-container">
+    <el-form ref="AccountForm" :model="account" :rules="rules" label-position="left" label-width="0px"class="demo-ruleForm login-container">
       <h3 class="title">欢迎登录</h3>
       <el-form-item prop="username">
         <el-input type="text" v-model="account.username" auto-complete="off" placeholder="手机号或公司企业码"></el-input>
@@ -30,6 +29,7 @@
   </div>
 </template>
 <script>
+  import md5 from 'js-md5'
   import API from '../api/api_user'
   export default {
     data() {
@@ -64,14 +64,13 @@
         rules: {
           username: [
             { required: true, validator: validateAccount, trigger: 'change' }
-
           ],
           pwd: [
-            {required: true, validator: validatePwd, trigger: 'change'}
+            { required: true, validator: validatePwd, trigger: 'change'}
           ]
         },
         pwdFocus: false,
-		    allowLogin: true,
+		    allowLogin: false,
         checked: true
       };
     },
@@ -85,24 +84,30 @@
     },
     methods: {
       handleLogin(){
-        let that = this;
-        let result = {
-          id: '1',
-          username: 'admin',
-          nickname: this.account.username,
-          name: 'administrator',
-          email: '888888@163.com'
-        };
-        this.loading = true;
-        let status = API.login(result);
-        if(status == 'success'){
-          localStorage.setItem('access-user', JSON.stringify(result));
-          window.localStorage.removeItem('register-user');
-          that.$router.push({path: '/'});
-        } else {
-		      this.loading = false;
-          this.$message.error("登录失败，账号或密码错误");
-        }
+        this.$refs.AccountForm.validate((valid) => {
+          if(valid) {
+            this.allowLogin = false;
+            let that = this;
+            let params = {
+              username: this.account.username,
+              password: md5(this.account.pwd)
+            };
+            that.loading = true;
+            API.login(params).then(function (res) {
+              if(res.data.code == 200){
+                that.$message.success(res.data.msg);
+                localStorage.setItem('access-user', JSON.stringify(params));
+                window.localStorage.removeItem('register-user');
+                that.$router.push({path: '/'});
+              } else {
+                that.loading = false;
+                that.$message.error(res.data.msg);
+              }
+            })
+          } else {
+            this.allowLogin = true;
+          }
+        })
       },
 	    validateCorrect(){
         if(this.account.pwd.trim().length > 0 && this.account.username.trim().length > 0){
