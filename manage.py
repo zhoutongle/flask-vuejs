@@ -41,6 +41,26 @@ auth = HTTPBasicAuth()
 CSRF_ENABLED = True
 app.debug = True
 
+class JoinInfos(db.Model):
+    __tablename__ = 'joininfos'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64), index=True)
+    phone = db.Column(db.String(30))
+    email = db.Column(db.String(120), index=True)
+    addr = db.Column(db.String(120))
+    pub_date = db.Column(db.DateTime, default=datetime.now())
+
+    def to_dict(self):
+        columns = self.__table__.columns.keys()
+        result = {}
+        for key in columns:
+            if key == 'pub_date':
+                value = getattr(self, key).strftime("%Y-%m-%d %H:%M:%S")
+            else:
+                value = getattr(self, key)
+            result[key] = value
+        return result
+
 @app.route('/api/users/login', methods=['POST'])
 def api_users_login():
     result = {}
@@ -58,6 +78,29 @@ def api_users_login():
         result['code'] = 201
         result['msg'] = '用户名错误!'         
     return jsonify(result)
+    
+@app.route('/api/users/listpage', methods=['GET'])
+def api_users_listpage():
+    page_size = 4
+    page = request.args.get('page', 1, type=int)
+    name = request.args.get('name', '')
+    query = db.session.query
+    if name:
+        Infos = query(JoinInfos).filter(
+            JoinInfos.name.like('%{}%'.format(name)))
+    else:
+        Infos = query(JoinInfos)
+    total = Infos.count()
+    if not page:
+        Infos = Infos.all()
+    else:
+        Infos = Infos.offset((page - 1) * page_size).limit(page_size).all()
+    return jsonify({
+        'code': 200,
+        'total': total,
+        'page_size': page_size,
+        'infos': [u.to_dict() for u in Infos]
+    })        
 
 if __name__ == '__main__':
     db.create_all()

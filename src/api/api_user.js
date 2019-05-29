@@ -10,5 +10,9 @@ export default {
   logout: params => {
     //return "success";
     return API.GET('/users/logout', params)
+  },
+  //获得用户列表
+  getuserslist: params => {
+    return API.GET('/users/listpage', params)
   }
 }
